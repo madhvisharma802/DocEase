@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocEase - Smart Hospital Queue Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🏥</span>
+                <span class="logo-text">Doc<span class="logo-highlight">Ease</span></span>
+                <span class="logo-tagline">| Your Health, Our Priority</span>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Welcome to <span class="text-primary">DocEase</span></h1>
+            <p class="hero-quote">"Smart Queue Management for Better Healthcare"</p>
+            <p class="hero-subtitle">Experience hassle-free appointments with real-time queue tracking</p>
+        </div>
+    </section>
+
+    <section class="why-us">
+        <h2 class="section-title">Why DocEase?</h2>
+        <div class="features-grid">
+            <div class="feature-card"><div class="feature-icon">⏱️</div><h3>Save Time</h3><p>Reduce waiting time with smart queue management</p></div>
+            <div class="feature-card"><div class="feature-icon">👨‍⚕️</div><h3>Expert Doctors</h3><p>Connect with experienced specialists</p></div>
+            <div class="feature-card"><div class="feature-icon">📊</div><h3>Real-time Tracking</h3><p>Track queue position and wait time</p></div>
+            <div class="feature-card"><div class="feature-icon">⭐</div><h3>Rate & Review</h3><p>Share your experience</p></div>
+            <div class="feature-card"><div class="feature-icon">📄</div><h3>Digital Reports</h3><p>Generate health reports instantly</p></div>
+            <div class="feature-card"><div class="feature-icon">🔔</div><h3>Smart Alerts</h3><p>Get notified when it's your turn</p></div>
+        </div>
+    </section>
+
+    <!-- 3 Panels Selection -->
+    <section class="role-selection">
+        <h2 class="section-title">Select Your Panel</h2>
+        <div class="role-cards">
+            <div class="role-card" onclick="showRoleModal('PATIENT')">
+                <div class="role-icon">👤</div>
+                <h3>Patient Panel</h3>
+                <p>Book appointments, track queue, view reports</p>
+                <button class="btn-role">Login / Register →</button>
+            </div>
+            <div class="role-card" onclick="showRoleModal('DOCTOR')">
+                <div class="role-icon">👨‍⚕️</div>
+                <h3>Doctor Panel</h3>
+                <p>Manage queue, see patients, view reviews</p>
+                <button class="btn-role">Login →</button>
+            </div>
+            <div class="role-card" onclick="showRoleModal('ADMIN')">
+                <div class="role-icon">🏥</div>
+                <h3>Hospital Admin Panel</h3>
+                <p>Manage patients & doctors, view analytics</p>
+                <button class="btn-role">Login →</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="doctors-preview">
+        <h2 class="section-title">Our Expert Doctors</h2>
+        <div class="doctors-grid" id="doctorsGrid"></div>
+    </section>
+
+    <!-- Login/Register Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="loginForm" class="auth-form active">
+                <h2 id="modalTitle">Login to Patient Panel</h2>
+                <form onsubmit="handleLogin(event)">
+                    <input type="hidden" id="loginRole" value="">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="loginEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Login</button>
+                </form>
+                <p class="form-footer" id="registerLink">Don't have an account? <a href="#" onclick="switchToRegister()">Register here</a></p>
+            </div>
+            <div id="registerForm" class="auth-form">
+                <h2>Register as Patient</h2>
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-row">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="regName" class="form-input" required></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="regEmail" class="form-input" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Phone</label><input type="tel" id="regPhone" class="form-input" required></div>
+                        <div class="form-group"><label>Age</label><input type="number" id="regAge" class="form-input" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Blood Group</label><select id="regBloodGroup" class="form-input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                        <div class="form-group"><label>Address</label><input type="text" id="regAddress" class="form-input" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Password</label><input type="password" id="regPassword" class="form-input" required></div>
+                        <div class="form-group"><label>Confirm Password</label><input type="password" id="regConfirmPassword" class="form-input" required></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Register</button>
+                </form>
+                <p class="form-footer">Already have an account? <a href="#" onclick="switchToLogin()">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .doctors-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
+        .doctor-card { background: #f8f9fa; border-radius: 15px; padding: 1.5rem; text-align: center; }
+        .doctor-icon { font-size: 3rem; }
+        .doctor-specialty { color: #667eea; font-weight: 600; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 20px; padding: 2rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .close { float: right; font-size: 1.5rem; cursor: pointer; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .btn-role { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; margin-top: 1rem; }
+        .role-card { cursor: pointer; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 1rem; border-radius: 10px; color: white; z-index: 1000; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+    </style>
+
+    <script>
+        let selectedRole = '';
+
+        function showRoleModal(role) {
+            selectedRole = role;
+            document.getElementById('loginRole').value = role;
+            const title = document.getElementById('modalTitle');
+            const registerLink = document.getElementById('registerLink');
+            if (role === 'PATIENT') {
+                title.innerText = 'Login to Patient Panel';
+                registerLink.style.display = 'block';
+            } else if (role === 'DOCTOR') {
+                title.innerText = 'Login to Doctor Panel';
+                registerLink.style.display = 'none';
+            } else if (role === 'ADMIN') {
+                title.innerText = 'Login to Hospital Admin Panel';
+                registerLink.style.display = 'none';
+            }
+            document.getElementById('authModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('authModal').style.display = 'none'; }
+        function switchToRegister() { document.getElementById('loginForm').classList.remove('active'); document.getElementById('registerForm').classList.add('active'); }
+        function switchToLogin() { document.getElementById('registerForm').classList.remove('active'); document.getElementById('loginForm').classList.add('active'); }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const role = document.getElementById('loginRole').value;
+
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('userId', data.userId);
+                    localStorage.setItem('userName', data.name);
+                    localStorage.setItem('userRole', data.role);
+                    if (data.patientId) localStorage.setItem('patientId', data.patientId);
+                    if (data.doctorId) localStorage.setItem('doctorId', data.doctorId);
+                    showToast('Login successful!', 'success');
+                    setTimeout(() => {
+                        if (data.role === 'PATIENT') window.location.href = 'patient.html';
+                        else if (data.role === 'DOCTOR') window.location.href = 'doctor.html';
+                        else if (data.role === 'ADMIN') window.location.href = 'admin.html';
+                    }, 1000);
+                } else { showToast(data.error, 'error'); }
+            } catch (error) { showToast('Server error! Make sure backend is running on port 8080', 'error'); }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            if (password !== confirm) { showToast('Passwords do not match!', 'error'); return; }
+            const userData = {
+                name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                phone: document.getElementById('regPhone').value,
+                age: document.getElementById('regAge').value,
+                bloodGroup: document.getElementById('regBloodGroup').value,
+                address: document.getElementById('regAddress').value,
+                password: password
+            };
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast('Registration successful! Please login.', 'success');
+                    switchToLogin();
+                } else { showToast(data.error, 'error'); }
+            } catch (error) { showToast('Registration failed', 'error'); }
+        }
+
+        async function loadDoctors() {
+            try {
+                const response = await fetch('http://localhost:8080/api/doctors');
+                const doctors = await response.json();
+                const grid = document.getElementById('doctorsGrid');
+                if (grid) {
+                    grid.innerHTML = doctors.slice(0, 6).map(doc => `
+                        <div class="doctor-card"><div class="doctor-icon">👨‍⚕️</div><h3>${doc.name}</h3><p class="doctor-specialty">${doc.specialization}</p><p class="doctor-fee">₹${doc.fee}</p><p class="doctor-time">⏰ ${doc.availableTime}</p><p class="doctor-rating">⭐ ${doc.rating} (${doc.reviews} reviews)</p></div>
+                    `).join('');
+                }
+            } catch (error) { console.error('Error:', error); }
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        window.onclick = function(event) { const modal = document.getElementById('authModal'); if (event.target === modal) closeModal(); }
+        loadDoctors();
+    </script>
+</body>
+</html>

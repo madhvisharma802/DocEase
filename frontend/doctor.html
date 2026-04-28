@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal - DocEase</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .queue-container { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; margin-top: 1rem; }
+        .queue-header { background: #1a237e; color: white; padding: 1rem; display: grid; grid-template-columns: 60px 1fr 100px 80px 100px; gap: 1rem; font-weight: 600; }
+        .queue-item { padding: 1rem; border-bottom: 1px solid #e0e0e0; display: grid; grid-template-columns: 60px 1fr 100px 80px 100px; gap: 1rem; align-items: center; }
+        .serving-card { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; }
+        .timer { font-size: 2rem; font-family: monospace; font-weight: bold; margin-top: 0.5rem; }
+        .btn-start { background: #4caf50; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 6px; cursor: pointer; }
+        .btn-complete { background: #ff9800; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 6px; cursor: pointer; }
+        .wait-badge { background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo"><span class="logo-icon">🏥</span><span class="logo-text">Doc<span class="logo-highlight">Ease</span></span><span class="logo-tagline">| Doctor Portal</span></div>
+            <div class="nav-links"><span>👨‍⚕️ Dr. <span id="doctorName"></span></span><a href="#" onclick="logout()" class="nav-link">Exit</a></div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Consultation Dashboard</h1>
+        <p id="doctorSpecialty"></p>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div id="servingSection" style="display: none;">
+            <div class="serving-card">
+                <h3>🔄 Currently in Consultation</h3>
+                <div id="servingDetails"></div>
+                <div class="timer" id="consultTimer">00:00</div>
+                <button class="btn-complete" onclick="completeConsultation()" style="margin-top: 1rem;">✓ Complete & Next</button>
+            </div>
+        </div>
+
+        <h2>Patient Queue</h2>
+        <div class="queue-container">
+            <div class="queue-header">
+                <span>#</span><span>Patient</span><span>Token</span><span>Wait</span><span>Action</span>
+            </div>
+            <div id="queueList"></div>
+        </div>
+
+        <h2 style="margin: 2rem 0 1rem 0;">Patient Reviews</h2>
+        <div id="reviewsSection"></div>
+        
+        <div style="margin-top: 2rem; text-align: right;">
+            <button onclick="downloadReport()" class="btn btn-outline">📄 Download Report</button>
+        </div>
+    </div>
+
+    <script>
+        let doctorId = null;
+        let timerInterval = null;
+        let refreshInterval = null;
+
+        function logout() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (refreshInterval) clearInterval(refreshInterval);
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        async function loadDashboard() {
+            doctorId = localStorage.getItem('doctorId');
+            if (!doctorId) { window.location.href = 'index.html'; return; }
+            document.getElementById('doctorName').innerHTML = localStorage.getItem('userName');
+            await loadDoctorInfo();
+            await loadQueue();
+            await loadReviews();
+            await loadStats();
+        }
+
+        async function loadDoctorInfo() {
+            const res = await fetch(`http://localhost:8080/api/doctors/${doctorId}`);
+            const doctor = await res.json();
+            document.getElementById('doctorSpecialty').innerHTML = `${doctor.specialization} | ${doctor.experience} | ${doctor.qualification}`;
+        }
+
+        async function loadStats() {
+            const res = await fetch(`http://localhost:8080/api/reviews/doctor/${doctorId}`);
+            const reviews = await res.json();
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card"><div class="number" id="waitCount">0</div><div>Waiting</div></div>
+                <div class="stat-card"><div class="number">${reviews.averageRating || 0}</div><div>Rating</div></div>
+                <div class="stat-card"><div class="number">${reviews.totalReviews || 0}</div><div>Reviews</div></div>
+            `;
+        }
+
+        async function loadQueue() {
+            const res = await fetch(`http://localhost:8080/api/queue/doctor/${doctorId}`);
+            const data = await res.json();
+            
+            document.getElementById('waitCount').innerHTML = data.waitingCount;
+            
+            if (data.currentPatient) {
+                document.getElementById('servingSection').style.display = 'block';
+                document.getElementById('servingDetails').innerHTML = `
+                    <p><strong>Patient:</strong> ${data.currentPatient.patientName}</p>
+                    <p><strong>Token:</strong> ${data.currentPatient.token}</p>
+                    <p><strong>Symptoms:</strong> ${data.currentPatient.symptoms}</p>
+                `;
+                startConsultTimer(data.currentPatient.startedAt);
+            } else {
+                document.getElementById('servingSection').style.display = 'none';
+                if (timerInterval) clearInterval(timerInterval);
+            }
+            
+            if (data.waitingList.length === 0) {
+                document.getElementById('queueList').innerHTML = '<div class="queue-item" style="grid-template-columns: 1fr; text-align: center;">No patients waiting</div>';
+            } else {
+                document.getElementById('queueList').innerHTML = data.waitingList.map((p, idx) => `
+                    <div class="queue-item">
+                        <span><strong>${idx + 1}</strong></span>
+                        <div><strong>${p.patientName}</strong><br><small>${p.symptoms.substring(0, 40)}</small></div>
+                        <span class="wait-badge">${p.token}</span>
+                        <span>${p.waitTime} min</span>
+                        <button class="btn-start" onclick="startConsultation('${p.patientId}')">Start</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function startConsultation(patientId) {
+            const res = await fetch(`http://localhost:8080/api/queue/doctor/${doctorId}/start-next`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (res.ok) {
+                loadQueue();
+            }
+        }
+
+        async function completeConsultation() {
+            const res = await fetch(`http://localhost:8080/api/queue/doctor/${doctorId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (res.ok) {
+                loadQueue();
+                loadReviews();
+                showToast('Consultation completed! Next patient in queue.', 'success');
+            }
+        }
+
+        function startConsultTimer(startTime) {
+            if (timerInterval) clearInterval(timerInterval);
+            const start = new Date(startTime);
+            
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                const diff = Math.floor((now - start) / 1000);
+                const mins = Math.floor(diff / 60);
+                const secs = diff % 60;
+                document.getElementById('consultTimer').innerHTML = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        async function loadReviews() {
+            const res = await fetch(`http://localhost:8080/api/reviews/doctor/${doctorId}`);
+            const data = await res.json();
+            if (data.reviews && data.reviews.length > 0) {
+                document.getElementById('reviewsSection').innerHTML = data.reviews.map(r => `
+                    <div class="review-card">
+                        <div>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+                        <p><strong>${r.patientName}</strong> <small>${new Date(r.date).toLocaleDateString()}</small></p>
+                        <p>${r.comment || 'No comment'}</p>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('reviewsSection').innerHTML = '<div class="review-card">No reviews yet</div>';
+            }
+        }
+
+        function downloadReport() {
+            window.open(`http://localhost:8080/api/doctor/${doctorId}/consultations`, '_blank');
+        }
+
+        function showToast(msg, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        loadDashboard();
+        refreshInterval = setInterval(() => { if (doctorId) loadQueue(); }, 8000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+{
+  "hospitals": [
+    {
+      "id": 1,
+      "name": "DocEase Medical Center",
+      "address": "123 Healthcare Avenue",
+      "phone": "+91 1800 123 4567",
+      "email": "contact@docease.com"
+    }
+  ],
+  "doctors": [
+    {
+      "id": 1,
+      "name": "Dr. Rajesh Kumar",
+      "specialization": "Cardiologist",
+      "fee": 1200,
+      "availableTime": "09:00 - 17:00",
+      "rating": 4.8,
+      "totalReviews": 0,
+      "experience": "15 years",
+      "qualification": "MD, DM Cardiology"
+    },
+    {
+      "id": 2,
+      "name": "Dr. Priya Sharma",
+      "specialization": "Dermatologist",
+      "fee": 1000,
+      "availableTime": "10:00 - 18:00",
+      "rating": 4.9,
+      "totalReviews": 0,
+      "experience": "10 years",
+      "qualification": "MD Dermatology"
+    },
+    {
+      "id": 3,
+      "name": "Dr. Amit Patel",
+      "specialization": "Orthopedic",
+      "fee": 1100,
+      "availableTime": "09:00 - 16:00",
+      "rating": 0,
+      "totalReviews": 0,
+      "experience": "12 years",
+      "qualification": "MS Orthopedics"
+    },
+    {
+      "id": 4,
+      "name": "Dr. Kavita Desai",
+      "specialization": "Dentist",
+      "fee": 800,
+      "availableTime": "10:00 - 18:00",
+      "rating": 0,
+      "totalReviews": 0,
+      "experience": "10 years",
+      "qualification": "BDS, MDS"
+    }
+  ],
+  "patients": [
+    {
+      "id": 1,
+      "name": "Aarav Sharma",
+      "email": "aarav@test.com",
+      "password": "patient123",
+      "phone": "9876500001",
+      "age": 32,
+      "bloodGroup": "O+",
+      "address": "Delhi",
+      "medicalHistory": "No significant history",
+      "consultations": []
+    },
+    {
+      "id": 2,
+      "name": "Vihaan Gupta",
+      "email": "vihaan@test.com",
+      "password": "patient123",
+      "phone": "9876500002",
+      "age": 28,
+      "bloodGroup": "A+",
+      "address": "Mumbai",
+      "medicalHistory": "Mild Hypertension",
+      "consultations": []
+    },
+    {
+      "id": 3,
+      "name": "Vanya Mehta",
+      "email": "vanya@test.com",
+      "password": "patient123",
+      "phone": "9876500003",
+      "age": 35,
+      "bloodGroup": "B+",
+      "address": "Bangalore",
+      "medicalHistory": "Asthma",
+      "consultations": []
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "name": "Admin",
+      "email": "admin@docease.com",
+      "password": "admin123",
+      "role": "ADMIN"
+    },
+    {
+      "id": 2,
+      "name": "Dr. Rajesh Kumar",
+      "email": "rajesh@docease.com",
+      "password": "doctor123",
+      "role": "DOCTOR",
+      "doctorId": 1
+    },
+    {
+      "id": 3,
+      "name": "Dr. Priya Sharma",
+      "email": "priya@docease.com",
+      "password": "doctor123",
+      "role": "DOCTOR",
+      "doctorId": 2
+    },
+    {
+      "id": 4,
+      "name": "Dr. Amit Patel",
+      "email": "amit@docease.com",
+      "password": "doctor123",
+      "role": "DOCTOR",
+      "doctorId": 3
+    },
+    {
+      "id": 5,
+      "name": "Dr. Kavita Desai",
+      "email": "kavita@docease.com",
+      "password": "doctor123",
+      "role": "DOCTOR",
+      "doctorId": 4
+    }
+  ],
+  "activeQueues": [
+    {
+      "doctorId": 1,
+      "doctorName": "Dr. Rajesh Kumar",
+      "date": "2026-04-28",
+      "patients": [
+        {
+          "patientId": 1,
+          "patientName": "Aarav Sharma",
+          "symptoms": "chest pain",
+          "bookedAt": "2026-04-28T17:59:15.735Z",
+          "queueNumber": 1,
+          "token": "Q001",
+          "estimatedWait": 0,
+          "status": "WAITING"
+        }
+      ],
+      "currentServing": null,
+      "servingStartTime": null
+    }
+  ],
+  "completedConsultations": [],
+  "reviews": []
+}

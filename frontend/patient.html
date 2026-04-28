@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Portal - DocEase</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .queue-status { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; }
+        .timer-display { font-size: 2rem; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px; }
+        .appointment-card { background: white; border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .status { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+        .status-WAITING { background: #fff3e0; color: #e65100; }
+        .status-IN_PROGRESS { background: #e3f2fd; color: #1565c0; }
+        .status-COMPLETED { background: #e8f5e9; color: #2e7d32; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; padding: 1.5rem; max-width: 500px; width: 90%; }
+        .report-btn { background: #4caf50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+        .report-btn:hover { background: #388e3c; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo"><span class="logo-icon">🏥</span><span class="logo-text">Doc<span class="logo-highlight">Ease</span></span><span class="logo-tagline">| Patient Portal</span></div>
+            <div class="nav-links"><span>👋 <span id="userName"></span></span><a href="#" onclick="logout()" class="nav-link">Logout</a></div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Patient Dashboard</h1>
+        <p>Welcome, <span id="patientName"></span></p>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div id="queueStatusCard" style="display: none;" class="queue-status">
+            <h3>Current Appointment Status</h3>
+            <div id="queueDetails"></div>
+            <div id="timerDisplay" class="timer-display">--:--</div>
+        </div>
+
+        <button onclick="openBookingModal()" class="btn btn-primary">+ Book New Appointment</button>
+
+        <h2 style="margin: 2rem 0 1rem 0;">Your Consultation History</h2>
+        <div id="consultationsList"></div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingModal()" style="float: right; cursor: pointer;">&times;</span>
+            <h2>Book Appointment</h2>
+            <form onsubmit="bookAppointment(event)">
+                <div class="form-group"><label>Select Doctor</label><select id="doctorSelect" class="form-input" required></select></div>
+                <div class="form-group"><label>Appointment Date</label><input type="date" id="appointmentDate" class="form-input" required></div>
+                <div class="form-group"><label>Symptoms</label><textarea id="symptoms" class="form-input" rows="3"></textarea></div>
+                <button type="submit" class="btn btn-primary btn-full">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+        const patientId = localStorage.getItem('patientId');
+
+        function logout() { 
+            if (timerInterval) clearInterval(timerInterval);
+            localStorage.clear(); 
+            window.location.href = 'index.html'; 
+        }
+
+        async function loadDashboard() {
+            if (!patientId) { window.location.href = 'index.html'; return; }
+            const name = localStorage.getItem('userName');
+            document.getElementById('patientName').innerHTML = name;
+            document.getElementById('userName').innerHTML = name;
+            await loadDoctors();
+            await loadConsultations();
+            await loadQueueStatus();
+            await loadStats();
+        }
+
+        async function loadStats() {
+            const res = await fetch('http://localhost:8080/api/admin/stats');
+            const stats = await res.json();
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card"><div class="number">${stats.totalDoctors}</div><div>Available Doctors</div></div>
+                <div class="stat-card"><div class="number" id="consultCount">0</div><div>Consultations</div></div>
+            `;
+        }
+
+        async function loadDoctors() {
+            const res = await fetch('http://localhost:8080/api/doctors');
+            const doctors = await res.json();
+            const select = document.getElementById('doctorSelect');
+            select.innerHTML = '<option value="">Select a doctor</option>' + doctors.map(d => `<option value="${d.id}">${d.name} - ${d.specialization} (₹${d.fee})</option>`).join('');
+        }
+
+        async function loadConsultations() {
+            const res = await fetch(`http://localhost:8080/api/patients/${patientId}/history`);
+            const data = await res.json();
+            document.getElementById('consultCount').innerHTML = data.consultations.length;
+            const container = document.getElementById('consultationsList');
+            if (data.consultations.length === 0) {
+                container.innerHTML = '<div class="appointment-card">No past consultations</div>';
+                return;
+            }
+            container.innerHTML = data.consultations.map(c => `
+                <div class="appointment-card">
+                    <div><strong>Dr. ${c.doctorName}</strong><br>📅 ${c.date} | Token: ${c.token}<br>Symptoms: ${c.symptoms}</div>
+                    <div><span class="status status-COMPLETED">Completed</span>
+                    <button class="report-btn" onclick="generateReport(${patientId}, ${c.doctorId})" style="margin-left: 0.5rem;">📄 Report</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function generateReport(patientId, doctorId) {
+            window.open(`http://localhost:8080/api/report/consultation/${patientId}/${doctorId}`, '_blank');
+        }
+
+        async function loadQueueStatus() {
+            const res = await fetch(`http://localhost:8080/api/queue/patient/${patientId}`);
+            const data = await res.json();
+            
+            if (data.hasAppointment && data.status === 'WAITING') {
+                document.getElementById('queueStatusCard').style.display = 'block';
+                document.getElementById('queueDetails').innerHTML = `
+                    <p><strong>Doctor:</strong> ${data.doctorName}</p>
+                    <p><strong>Token:</strong> ${data.token}</p>
+                    <p><strong>Position in Queue:</strong> #${data.position}</p>
+                    <p><strong>Estimated Wait:</strong> ${data.estimatedWait} minutes</p>
+                `;
+                startTimer(data.estimatedWait);
+            } else if (data.hasAppointment && data.status === 'IN_PROGRESS') {
+                document.getElementById('queueStatusCard').style.display = 'block';
+                document.getElementById('queueDetails').innerHTML = `<p><strong>Doctor:</strong> ${data.doctorName}</p><p><strong>Status:</strong> In consultation</p><p>You are currently being seen by the doctor.</p>`;
+                document.getElementById('timerDisplay').innerHTML = "In Progress";
+            } else {
+                document.getElementById('queueStatusCard').style.display = 'none';
+                if (timerInterval) clearInterval(timerInterval);
+            }
+        }
+
+        function startTimer(minutes) {
+            if (timerInterval) clearInterval(timerInterval);
+            let totalSeconds = minutes * 60;
+            timerInterval = setInterval(() => {
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timerDisplay').innerHTML = "00:00";
+                } else {
+                    totalSeconds--;
+                    const mins = Math.floor(totalSeconds / 60);
+                    const secs = totalSeconds % 60;
+                    document.getElementById('timerDisplay').innerHTML = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        async function bookAppointment(e) {
+            e.preventDefault();
+            const doctorId = document.getElementById('doctorSelect').value;
+            const date = document.getElementById('appointmentDate').value;
+            const symptoms = document.getElementById('symptoms').value;
+            const res = await fetch('http://localhost:8080/api/doctors');
+            const doctors = await res.json();
+            const doctor = doctors.find(d => d.id == doctorId);
+            const patientName = localStorage.getItem('userName');
+            
+            const response = await fetch('http://localhost:8080/api/appointments/book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: parseInt(patientId), patientName,
+                    doctorId: parseInt(doctorId), doctorName: doctor.name,
+                    date, symptoms
+                })
+            });
+            
+            const data = await response.json();
+            if (response.ok) {
+                alert(`Appointment Confirmed!\nToken: ${data.token}\nQueue Position: #${data.position}\nEst. Wait: ${data.estimatedWait} minutes`);
+                closeBookingModal();
+                loadQueueStatus();
+                document.getElementById('symptoms').value = '';
+            } else {
+                alert(data.error || 'Booking failed');
+            }
+        }
+
+        function openBookingModal() {
+            document.getElementById('bookingModal').classList.add('active');
+            document.getElementById('appointmentDate').value = new Date().toISOString().split('T')[0];
+        }
+        function closeBookingModal() { document.getElementById('bookingModal').classList.remove('active'); }
+
+        loadDashboard();
+        setInterval(() => { if (patientId) loadQueueStatus(); }, 10000);
+    </script>
+</body>
+</html>

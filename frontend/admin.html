@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Admin - DocEase</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; flex-wrap: wrap; }
+        .tab-btn { background: none; border: none; padding: 0.5rem 1.5rem; font-size: 1rem; cursor: pointer; border-radius: 8px; }
+        .tab-btn.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .patient-card, .doctor-card-admin { background: white; border-radius: 15px; padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .search-box { margin-bottom: 1rem; padding: 0.5rem; width: 300px; border: 2px solid #e0e0e0; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f8f9fa; }
+        .btn-small { padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 20px; padding: 2rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <nav><div class="nav-container"><div class="logo"><span class="logo-icon">🏥</span><span class="logo-text">Doc<span class="logo-highlight">Ease</span></span><span class="logo-tagline">| Hospital Admin Panel</span></div><div class="nav-links"><span>👑 Admin</span><a href="#" onclick="logout()" class="nav-link">Logout</a></div></div></nav>
+
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Hospital Admin Dashboard</h1>
+        <p>Manage patients, doctors, and monitor hospital operations</p>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('patients')">👥 Manage Patients</button>
+            <button class="tab-btn" onclick="showTab('doctors')">👨‍⚕️ Manage Doctors</button>
+            <button class="tab-btn" onclick="showTab('appointments')">📅 All Appointments</button>
+        </div>
+
+        <div id="patientsTab" class="tab-content active">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Patient Records</h2>
+                <button onclick="showAddPatientModal()" class="btn btn-primary">+ Add New Patient</button>
+            </div>
+            <input type="text" id="patientSearch" class="search-box" placeholder="Search by name or email..." onkeyup="searchPatients()">
+            <div id="patientsList"></div>
+        </div>
+
+        <div id="doctorsTab" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Doctor Records</h2>
+                <button onclick="showAddDoctorForm()" class="btn btn-primary">+ Add New Doctor</button>
+            </div>
+            <div id="doctorsList"></div>
+            <div id="addDoctorForm" style="display: none; margin-top: 1rem; background: white; padding: 1.5rem; border-radius: 15px;">
+                <h3>Add New Doctor</h3>
+                <form onsubmit="addDoctor(event)">
+                    <div class="form-row"><input type="text" id="docName" placeholder="Full Name" class="form-input" required><input type="text" id="docSpecialization" placeholder="Specialization" class="form-input" required></div>
+                    <div class="form-row"><input type="number" id="docFee" placeholder="Consultation Fee" class="form-input" required><input type="text" id="docAvailableTime" placeholder="Available Time" class="form-input" required></div>
+                    <div class="form-row"><input type="text" id="docExperience" placeholder="Experience" class="form-input" required><input type="text" id="docQualification" placeholder="Qualification" class="form-input" required></div>
+                    <button type="submit" class="btn btn-primary">Add Doctor</button>
+                    <button type="button" onclick="hideAddDoctorForm()" class="btn btn-outline">Cancel</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="appointmentsTab" class="tab-content">
+            <h2>All Appointments</h2>
+            <div id="allAppointmentsList"></div>
+        </div>
+    </div>
+
+    <!-- Add Patient Modal -->
+    <div id="addPatientModal" class="modal">
+        <div class="modal-content"><span class="close" onclick="closeAddPatientModal()">&times;</span><h2>Add New Patient</h2>
+            <form onsubmit="addPatient(event)">
+                <div class="form-group"><label>Full Name</label><input type="text" id="newPatientName" class="form-input" required></div>
+                <div class="form-group"><label>Email</label><input type="email" id="newPatientEmail" class="form-input" required></div>
+                <div class="form-group"><label>Phone</label><input type="tel" id="newPatientPhone" class="form-input" required></div>
+                <div class="form-group"><label>Age</label><input type="number" id="newPatientAge" class="form-input" required></div>
+                <div class="form-group"><label>Blood Group</label><select id="newPatientBloodGroup" class="form-input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                <div class="form-group"><label>Address</label><input type="text" id="newPatientAddress" class="form-input" required></div>
+                <div class="form-group"><label>Password</label><input type="password" id="newPatientPassword" class="form-input" value="patient123" required></div>
+                <button type="submit" class="btn btn-primary btn-full">Add Patient</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allPatients = [];
+
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+
+        async function loadData() {
+            const res = await fetch('http://localhost:8080/api/admin/stats');
+            const stats = await res.json();
+            document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="number">${stats.totalDoctors}</div><div>Total Doctors</div></div><div class="stat-card"><div class="number">${stats.totalPatients}</div><div>Total Patients</div></div><div class="stat-card"><div class="number">${stats.totalAppointments}</div><div>Total Appointments</div></div><div class="stat-card"><div class="number">${stats.todayAppointments}</div><div>Today's Appointments</div></div>`;
+            await loadPatients();
+            await loadDoctors();
+            await loadAppointments();
+        }
+
+        async function loadPatients() {
+            const res = await fetch('http://localhost:8080/api/patients');
+            allPatients = await res.json();
+            displayPatients(allPatients);
+        }
+
+        function displayPatients(patients) {
+            document.getElementById('patientsList').innerHTML = patients.map(p => `
+                <div class="patient-card"><div><strong>${p.name}</strong><br>📧 ${p.email}<br>📞 ${p.phone}<br>🎂 ${p.age} yrs | 🩸 ${p.bloodGroup}<br>📍 ${p.address}</div><div><span class="badge">Patient ID: ${p.id}</span></div></div>
+            `).join('');
+        }
+
+        function searchPatients() {
+            const search = document.getElementById('patientSearch').value.toLowerCase();
+            const filtered = allPatients.filter(p => p.name.toLowerCase().includes(search) || p.email.toLowerCase().includes(search));
+            displayPatients(filtered);
+        }
+
+        async function loadDoctors() {
+            const res = await fetch('http://localhost:8080/api/doctors');
+            const doctors = await res.json();
+            document.getElementById('doctorsList').innerHTML = doctors.map(d => `
+                <div class="doctor-card-admin"><div><strong>${d.name}</strong><br>${d.specialization} | ₹${d.fee} | ⭐ ${d.rating}<br>${d.availableTime} | ${d.experience}</div><button onclick="deleteDoctor(${d.id})" class="btn btn-outline btn-small" style="background:#dc3545; color:white;">Delete</button></div>
+            `).join('');
+        }
+
+        async function loadAppointments() {
+            const res = await fetch('http://localhost:8080/api/admin/appointments');
+            const appointments = await res.json();
+            document.getElementById('allAppointmentsList').innerHTML = appointments.map(a => `
+                <div class="appointment-card"><div><strong>Dr. ${a.doctorName}</strong> | Patient: ${a.patientName}<br>📅 ${a.date} | Token: ${a.token} | Queue: #${a.queueNumber} | Status: ${a.status}</div></div>
+            `).join('');
+        }
+
+        async function addDoctor(e) {
+            e.preventDefault();
+            const doctor = {
+                name: document.getElementById('docName').value,
+                specialization: document.getElementById('docSpecialization').value,
+                fee: document.getElementById('docFee').value,
+                availableTime: document.getElementById('docAvailableTime').value,
+                experience: document.getElementById('docExperience').value,
+                qualification: document.getElementById('docQualification').value
+            };
+            await fetch('http://localhost:8080/api/admin/doctors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(doctor) });
+            alert('Doctor added!'); hideAddDoctorForm(); loadDoctors(); loadData();
+        }
+
+        async function addPatient(e) {
+            e.preventDefault();
+            const patient = {
+                name: document.getElementById('newPatientName').value,
+                email: document.getElementById('newPatientEmail').value,
+                phone: document.getElementById('newPatientPhone').value,
+                age: document.getElementById('newPatientAge').value,
+                bloodGroup: document.getElementById('newPatientBloodGroup').value,
+                address: document.getElementById('newPatientAddress').value,
+                password: document.getElementById('newPatientPassword').value
+            };
+            const res = await fetch('http://localhost:8080/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patient) });
+            if (res.ok) { alert('Patient added successfully!'); closeAddPatientModal(); loadPatients(); loadData(); }
+            else alert('Failed to add patient');
+        }
+
+        async function deleteDoctor(id) { if (confirm('Delete this doctor?')) { await fetch(`http://localhost:8080/api/admin/doctors/${id}`, { method: 'DELETE' }); loadDoctors(); loadData(); } }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showAddDoctorForm() { document.getElementById('addDoctorForm').style.display = 'block'; }
+        function hideAddDoctorForm() { document.getElementById('addDoctorForm').style.display = 'none'; }
+        function showAddPatientModal() { document.getElementById('addPatientModal').style.display = 'flex'; }
+        function closeAddPatientModal() { document.getElementById('addPatientModal').style.display = 'none'; }
+
+        if (!localStorage.getItem('userId')) window.location.href = 'index.html';
+        loadData();
+    </script>
+</body>
+</html>
